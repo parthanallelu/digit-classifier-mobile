@@ -5,7 +5,7 @@ const predictionDisplay = document.getElementById('predictionDisplay');
 const confidenceBars = document.getElementById('confidenceBars');
 
 // API ENDPOINT config
-const API_URL = 'http://127.0.0.1:5000/predict';
+const API_URL = 'https://digit-classifier-backend-0qil.onrender.com/predict';
 
 let isDrawing = false;
 let lastX = 0;
