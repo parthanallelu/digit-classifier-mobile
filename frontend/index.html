@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="AI Handwritten Digit Classifier">
+    <title>Neural Digit Classifier</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="app-container">
+        <!-- Header -->
+        <header class="header">
+            <h1>Neural Digit Classifier</h1>
+            <p>Draw a digit (0-9) below and let our Multilayer Perceptron identify it.</p>
+        </header>
+
+        <div class="main-content">
+            <!-- Canvas Section -->
+            <div class="canvas-card">
+                <div class="canvas-header">
+                    <h2>Drawing Canvas</h2>
+                    <button id="clearBtn" class="btn btn-secondary">Clear</button>
+                </div>
+                <!-- Fixed size canvas for consistent 1:1 drawing -->
+                <canvas id="digitCanvas" width="300" height="300"></canvas>
+            </div>
+
+            <!-- Results Section -->
+            <div class="result-card">
+                <h2>Prediction Result</h2>
+                
+                <div id="predictionDisplay" class="prediction-placeholder">
+                    <span>Draw a digit to see the prediction</span>
+                </div>
+
+                <div class="confidence-section">
+                    <h3>Top Predictions</h3>
+                    <div id="confidenceBars" class="confidence-bars">
+                        <!-- Bars dynamically populated -->
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <script src="script.js"></script>
+</body>
+</html>

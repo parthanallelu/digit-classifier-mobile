@@ -3,14 +3,14 @@ from flask_cors import CORS
 from PIL import Image
 import io
 import base64
-from backend.predict import predict
+from utils import predict
 
 app = Flask(__name__)
-CORS(app)  # Allow cross-origin requests from Flutter
+CORS(app)  # Allow cross-origin requests
 
 @app.route('/predict', methods=['POST'])
 def predict_endpoint():
-    """Predict digits drawn in the mobile app."""
+    """Predict digits drawn on the web canvas."""
     try:
         data = request.json
         if not data or 'image' not in data:
