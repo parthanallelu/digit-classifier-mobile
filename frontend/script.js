@@ -1,152 +1,162 @@
 const canvas = document.getElementById('digitCanvas');
 const ctx = canvas.getContext('2d');
+const predictBtn = document.getElementById('predictBtn');
 const clearBtn = document.getElementById('clearBtn');
-const predictionDisplay = document.getElementById('predictionDisplay');
-const confidenceBars = document.getElementById('confidenceBars');
+const predictionValue = document.getElementById('predictionValue');
+const confidenceValue = document.getElementById('confidenceValue');
+const statusBadge = document.getElementById('statusBadge');
+const terminal = document.getElementById('terminal');
+const waterBarsContainer = document.getElementById('waterBars');
+const sampleGallery = document.getElementById('sampleGallery');
 
-// API ENDPOINT config
 const API_URL = 'https://digit-classifier-backend-0qil.onrender.com/predict';
 
 let isDrawing = false;
-let lastX = 0;
-let lastY = 0;
-let drawTimer = null;
 
-// Initialize Canvas
-ctx.fillStyle = 'black';
-ctx.fillRect(0, 0, canvas.width, canvas.height);
-ctx.lineJoin = 'round';
-ctx.lineCap = 'round';
-ctx.lineWidth = 15; // Thick stroke for MNIST style digits
-ctx.strokeStyle = 'white';
+// Initial Setup
+function init() {
+    ctx.fillStyle = 'black';
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    ctx.lineJoin = 'round';
+    ctx.lineCap = 'round';
+    ctx.lineWidth = 18;
+    ctx.strokeStyle = 'white';
 
-// Empty bar setup
-function resetBars() {
-    confidenceBars.innerHTML = '';
-    for (let i=0; i<3; i++) {
-        confidenceBars.innerHTML += `
-            <div class="bar-row">
-                <div class="bar-label">-</div>
-                <div class="bar-track"><div class="bar-fill" style="width: 0%"></div></div>
-                <div class="bar-val">0%</div>
-            </div>`;
+    createBars();
+    loadSamples();
+}
+
+function createBars() {
+    waterBarsContainer.innerHTML = '';
+    for (let i = 0; i <= 9; i++) {
+        const wrapper = document.createElement('div');
+        wrapper.className = 'bar-wrapper';
+        wrapper.innerHTML = `
+            <div class="bar-track">
+                <div class="water-fill" id="fill-${i}" style="height: 0%"></div>
+            </div>
+            <div class="label">${i}</div>
+        `;
+        waterBarsContainer.appendChild(wrapper);
     }
 }
-resetBars();
 
-// Interaction Events
-canvas.addEventListener('mousedown', startDrawing);
-canvas.addEventListener('mousemove', draw);
-canvas.addEventListener('mouseup', endDrawing);
-canvas.addEventListener('mouseout', endDrawing);
-
-// Touch support
-canvas.addEventListener('touchstart', handleTouchStart, { passive: false });
-canvas.addEventListener('touchmove', handleTouchMove, { passive: false });
-canvas.addEventListener('touchend', endDrawing);
-
-clearBtn.addEventListener('click', clearCanvas);
-
-function getPos(e) {
-    const rect = canvas.getBoundingClientRect();
-    const scaleX = canvas.width / rect.width;
-    const scaleY = canvas.height / rect.height;
-    return {
-        x: (e.clientX - rect.left) * scaleX,
-        y: (e.clientY - rect.top) * scaleY
-    };
+// Draw MNIST-like digits for gallery using simple path data
+function loadSamples() {
+    sampleGallery.innerHTML = '';
+    for (let i = 0; i < 10; i++) {
+        const box = document.createElement('div');
+        box.className = 'mnist-box';
+        // Using a centered number as a sample placeholder for MNIST vibe
+        box.style.display = 'flex';
+        box.style.alignItems = 'center';
+        box.style.justifyContent = 'center';
+        box.style.fontSize = '12px';
+        box.style.fontWeight = '800';
+        box.innerText = i;
+        sampleGallery.appendChild(box);
+    }
 }
 
-function startDrawing(e) {
+function addLog(msg, type = 'log') {
+    const p = document.createElement('p');
+    p.className = `term-msg term-${type}`;
+    p.innerText = `> ${msg}`;
+    terminal.appendChild(p);
+    terminal.scrollTop = terminal.scrollHeight;
+}
+
+// Canvas Interaction
+canvas.addEventListener('mousedown', (e) => {
     isDrawing = true;
-    const pos = getPos(e);
-    [lastX, lastY] = [pos.x, pos.y];
-}
-
-function draw(e) {
-    if (!isDrawing) return;
-    const pos = getPos(e);
-    
     ctx.beginPath();
-    ctx.moveTo(lastX, lastY);
-    ctx.lineTo(pos.x, pos.y);
-    ctx.stroke();
-    
-    [lastX, lastY] = [pos.x, pos.y];
-    
-    // Auto translate drawing into prediction after a delay
-    clearTimeout(drawTimer);
-    drawTimer = setTimeout(triggerPrediction, 400); 
-}
+    ctx.moveTo(e.offsetX, e.offsetY);
+});
 
-function endDrawing() {
+canvas.addEventListener('mousemove', (e) => {
+    if (isDrawing) {
+        ctx.lineTo(e.offsetX, e.offsetY);
+        ctx.stroke();
+    }
+});
+
+window.addEventListener('mouseup', () => {
     isDrawing = false;
-}
+});
 
-function handleTouchStart(e) {
-    e.preventDefault();
-    const touch = e.touches[0];
-    startDrawing(touch);
-}
-
-function handleTouchMove(e) {
-    e.preventDefault();
-    const touch = e.touches[0];
-    draw(touch);
-}
-
-function clearCanvas() {
+clearBtn.addEventListener('click', () => {
     ctx.fillRect(0, 0, canvas.width, canvas.height);
-    
-    // Reset Display
-    predictionDisplay.className = 'prediction-placeholder';
-    predictionDisplay.innerHTML = '<span>Draw a digit to see the prediction</span>';
+    predictionValue.innerText = '-';
+    confidenceValue.innerText = 'Ready for input';
+    statusBadge.className = 'status-badge idle';
+    statusBadge.innerText = 'Idle';
+    terminal.innerHTML = '<p class="term-msg">> System ready. Waiting for draw...</p>';
     resetBars();
+});
+
+function resetBars() {
+    for (let i = 0; i <= 9; i++) {
+        document.getElementById(`fill-${i}`).style.height = '0%';
+    }
 }
 
-async function triggerPrediction() {
-    const dataURL = canvas.toDataURL('image/png');
+// Predict Logic
+predictBtn.addEventListener('click', async () => {
+    addLog('Capturing canvas data...', 'stage');
+    const image = canvas.toDataURL('image/png');
     
+    addLog('Transmitting to Neural Core (Render API)...');
+    predictBtn.disabled = true;
+    predictBtn.innerText = 'Analyzing...';
+
     try {
         const response = await fetch(API_URL, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ image: dataURL })
+            body: JSON.stringify({ image })
         });
-        
-        if (!response.ok) throw new Error('API Error');
-        const result = await response.json();
-        
-        displayResult(result);
+
+        if (!response.ok) throw new Error('API unstable or unavailable');
+
+        const data = await response.json();
+        updateUI(data);
     } catch (err) {
-        console.error("Prediction failed:", err);
+        addLog(`Error: ${err.message}`, 'error');
+        predictionValue.innerText = '!';
+        confidenceValue.innerText = 'Connection Failed';
+    } finally {
+        predictBtn.disabled = false;
+        predictBtn.innerText = 'Predict Digit';
     }
+});
+
+function updateUI(data) {
+    // Prediction & Confidence
+    const pred = data.prediction;
+    const conf = (data.confidence * 100).toFixed(1);
+
+    predictionValue.innerText = isNaN(pred) ? '?' : pred;
+    confidenceValue.innerText = `${conf}% Confidence`;
+
+    // Status Badge
+    statusBadge.innerText = pred === "Not a digit" ? "Invalid" : 
+                            pred === "Uncertain" ? "Uncertain" : "Valid";
+    statusBadge.className = `status-badge ${statusBadge.innerText.toLowerCase()}`;
+
+    // Update Logs
+    if (data.logs) {
+        data.logs.forEach(msg => addLog(msg));
+    }
+
+    // Update Progress Bars
+    if (data.probabilities) {
+        data.probabilities.forEach((p, i) => {
+            const fill = document.getElementById(`fill-${i}`);
+            fill.style.height = `${p * 100}%`;
+        });
+    }
+
+    addLog('Analysis session completeed.', 'stage');
 }
 
-function displayResult(result) {
-    if(result.digit === undefined) return;
-    
-    // Update main prediction box
-    predictionDisplay.className = 'prediction-result';
-    predictionDisplay.innerHTML = `
-        <div class="pred-digit">${result.digit}</div>
-        <div class="pred-conf">${(result.confidence * 100).toFixed(1)}% Confidence</div>
-    `;
-    
-    // Update top 3 bars
-    confidenceBars.innerHTML = '';
-    result.top3.forEach(item => {
-        const [digit, prob] = item;
-        const color = prob > 0.8 ? 'var(--success)' : 'var(--accent)';
-        
-        confidenceBars.innerHTML += `
-            <div class="bar-row">
-                <div class="bar-label">${digit}</div>
-                <div class="bar-track">
-                    <div class="bar-fill" style="width: ${prob * 100}%; background: ${color}"></div>
-                </div>
-                <div class="bar-val">${(prob * 100).toFixed(0)}%</div>
-            </div>
-        `;
-    });
-}
+init();
