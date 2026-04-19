@@ -21,11 +21,12 @@ var/
 *.egg
 
 # Virtual environments
-.env
-.venv
-env/
-venv/
+venv*
+.venv*
+*venv
 ENV/
+env/
+.env*
 
 # Output
 .DS_Store

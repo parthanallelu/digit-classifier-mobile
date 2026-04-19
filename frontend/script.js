@@ -7,23 +7,29 @@ const confidenceValue = document.getElementById('confidenceValue');
 const statusBadge = document.getElementById('statusBadge');
 const terminal = document.getElementById('terminal');
 const waterBarsContainer = document.getElementById('waterBars');
-const sampleGallery = document.getElementById('sampleGallery');
 
-const API_URL = 'https://digit-classifier-backend-0qil.onrender.com/predict';
+// Vision Viz Canvases
+const vizRaw = document.getElementById('viz-raw').getContext('2d');
+const vizCentered = document.getElementById('viz-centered').getContext('2d');
+const vizFinal = document.getElementById('viz-final').getContext('2d');
 
 let isDrawing = false;
 
 // Initial Setup
 function init() {
+    setupCanvas();
+    createBars();
+    addLog('NEURAL_CORE_OS V2.0.4 Loaded.', 'stage');
+    addLog('Waiting for input stream...');
+}
+
+function setupCanvas() {
     ctx.fillStyle = 'black';
     ctx.fillRect(0, 0, canvas.width, canvas.height);
     ctx.lineJoin = 'round';
     ctx.lineCap = 'round';
     ctx.lineWidth = 18;
     ctx.strokeStyle = 'white';
-
-    createBars();
-    loadSamples();
 }
 
 function createBars() {
@@ -41,41 +47,34 @@ function createBars() {
     }
 }
 
-// Draw MNIST-like digits for gallery using simple path data
-function loadSamples() {
-    sampleGallery.innerHTML = '';
-    for (let i = 0; i < 10; i++) {
-        const box = document.createElement('div');
-        box.className = 'mnist-box';
-        // Using a centered number as a sample placeholder for MNIST vibe
-        box.style.display = 'flex';
-        box.style.alignItems = 'center';
-        box.style.justifyContent = 'center';
-        box.style.fontSize = '12px';
-        box.style.fontWeight = '800';
-        box.innerText = i;
-        sampleGallery.appendChild(box);
-    }
-}
-
-function addLog(msg, type = 'log') {
+function addLog(msg, type = 'normal') {
     const p = document.createElement('p');
-    p.className = `term-msg term-${type}`;
-    p.innerText = `> ${msg}`;
+    p.className = 'log-entry';
+    p.innerHTML = `<span class="timestamp">[${new Date().toLocaleTimeString()}]</span> > ${msg}`;
     terminal.appendChild(p);
     terminal.scrollTop = terminal.scrollHeight;
 }
 
 // Canvas Interaction
+function getXY(e) {
+    const rect = canvas.getBoundingClientRect();
+    return {
+        x: (e.clientX - rect.left) * (canvas.width / rect.width),
+        y: (e.clientY - rect.top) * (canvas.height / rect.height)
+    };
+}
+
 canvas.addEventListener('mousedown', (e) => {
     isDrawing = true;
+    const pos = getXY(e);
     ctx.beginPath();
-    ctx.moveTo(e.offsetX, e.offsetY);
+    ctx.moveTo(pos.x, pos.y);
 });
 
 canvas.addEventListener('mousemove', (e) => {
     if (isDrawing) {
-        ctx.lineTo(e.offsetX, e.offsetY);
+        const pos = getXY(e);
+        ctx.lineTo(pos.x, pos.y);
         ctx.stroke();
     }
 });
@@ -85,13 +84,15 @@ window.addEventListener('mouseup', () => {
 });
 
 clearBtn.addEventListener('click', () => {
-    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    setupCanvas();
     predictionValue.innerText = '-';
-    confidenceValue.innerText = 'Ready for input';
-    statusBadge.className = 'status-badge idle';
-    statusBadge.innerText = 'Idle';
-    terminal.innerHTML = '<p class="term-msg">> System ready. Waiting for draw...</p>';
+    predictionValue.style.color = 'var(--text-main)';
+    confidenceValue.innerText = '0.0%';
+    statusBadge.innerText = 'IDLE';
+    statusBadge.className = 'status-pill idle';
     resetBars();
+    clearViz();
+    addLog('Matrix reset complete. Memory cleared.', 'stage');
 });
 
 function resetBars() {
@@ -100,63 +101,88 @@ function resetBars() {
     }
 }
 
-// Predict Logic
+function clearViz() {
+    [vizRaw, vizCentered, vizFinal].forEach(v => {
+        v.fillStyle = '#000';
+        v.fillRect(0, 0, 60, 60);
+    });
+}
+
+// Prediction Logic
 predictBtn.addEventListener('click', async () => {
-    addLog('Capturing canvas data...', 'stage');
     const image = canvas.toDataURL('image/png');
     
-    addLog('Transmitting to Neural Core (Render API)...');
     predictBtn.disabled = true;
-    predictBtn.innerText = 'Analyzing...';
+    predictBtn.innerText = 'PROCESSING...';
+    addLog('Capturing Frame Data...', 'stage');
 
     try {
-        const response = await fetch(API_URL, {
+        const response = await fetch('/predict', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ image })
         });
 
-        if (!response.ok) throw new Error('API unstable or unavailable');
+        if (!response.ok) throw new Error('Neural Core Unavailable');
 
         const data = await response.json();
         updateUI(data);
     } catch (err) {
-        addLog(`Error: ${err.message}`, 'error');
+        addLog(`CRITICAL ERROR: ${err.message}`, 'error');
         predictionValue.innerText = '!';
-        confidenceValue.innerText = 'Connection Failed';
+        predictionValue.style.color = '#ff3232';
+        statusBadge.innerText = 'OFFLINE';
+        statusBadge.className = 'status-pill invalid';
     } finally {
         predictBtn.disabled = false;
-        predictBtn.innerText = 'Predict Digit';
+        predictBtn.innerText = 'INFER DIGIT';
     }
 });
 
 function updateUI(data) {
-    // Prediction & Confidence
     const pred = data.prediction;
     const conf = (data.confidence * 100).toFixed(1);
 
     predictionValue.innerText = isNaN(pred) ? '?' : pred;
-    confidenceValue.innerText = `${conf}% Confidence`;
+    confidenceValue.innerText = `${conf}%`;
 
-    // Status Badge
-    statusBadge.innerText = pred === "Not a digit" ? "Invalid" : 
-                            pred === "Uncertain" ? "Uncertain" : "Valid";
-    statusBadge.className = `status-badge ${statusBadge.innerText.toLowerCase()}`;
+    // Map status
+    let status = 'VALID';
+    if (pred === "Not a digit") status = 'INVALID';
+    if (pred === "Uncertain") status = 'UNCERTAIN';
+    
+    statusBadge.innerText = status;
+    statusBadge.className = `status-pill ${status.toLowerCase()}`;
 
-    // Update Logs
+    // Logs
     if (data.logs) {
         data.logs.forEach(msg => addLog(msg));
     }
 
-    // Update Progress Bars
+    // Probability Bars
     if (data.probabilities) {
         data.probabilities.forEach((p, i) => {
-            const fill = document.getElementById(`fill-${i}`);
-            fill.style.height = `${p * 100}%`;
+            document.getElementById(`fill-${i}`).style.height = `${p * 100}%`;
         });
     }
 
-    addLog('Analysis session completeed.', 'stage');
+    // Visualization simulation (Since we don't send viz data from backend, we simulate)
+    drawSimulation(pred);
+}
+
+function drawSimulation(pred) {
+    // This is just for "Wow" factor in frontend to show the process steps
+    const smallCanvas = document.createElement('canvas');
+    smallCanvas.width = 28;
+    smallCanvas.height = 28;
+    const sctx = smallCanvas.getContext('2d');
+    sctx.drawImage(canvas, 0, 0, 28, 28);
+    
+    // Draw on viz-raw
+    vizRaw.drawImage(canvas, 0, 0, 60, 60);
+    vizCentered.drawImage(smallCanvas, 0, 0, 60, 60);
+    vizFinal.filter = 'contrast(200%) grayscale(100%)';
+    vizFinal.drawImage(smallCanvas, 0, 0, 60, 60);
 }
 
 init();

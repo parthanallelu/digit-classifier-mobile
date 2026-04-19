@@ -1,20 +1,35 @@
+import os
+import io
+import base64
+import logging
 from flask import Flask, request, jsonify
 from flask_cors import CORS
 from PIL import Image
-import io
-import base64
 from utils import predict
 
-app = Flask(__name__)
+# Configure basic logging
+logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
+logger = logging.getLogger(__name__)
+
+app = Flask(__name__, static_folder='../frontend', static_url_path='')
 CORS(app)  # Allow cross-origin requests
+
+@app.route('/')
+def index():
+    """Serve the frontend dashboard."""
+    return app.send_static_file('index.html')
 
 @app.route('/predict', methods=['POST'])
 def predict_endpoint():
     """Predict digits drawn on the web canvas."""
     try:
-        data = request.json
+        data = request.get_json(silent=True)
         if not data or 'image' not in data:
-            return jsonify({"error": "No image data provided. Must send base64 string under 'image' key."}), 400
+            logger.warning("Empty request or missing image data")
+            return jsonify({
+                "error": "No image data provided. Must send base64 string under 'image' key.",
+                "status": "failure"
+            }), 400
 
         base64_img = data['image']
         # Strip header if present e.g., 'data:image/png;base64,...'
@@ -22,19 +37,40 @@ def predict_endpoint():
             base64_img = base64_img.split(',')[1]
 
         # Decode and load
-        img_bytes = base64.b64decode(base64_img)
-        img = Image.open(io.BytesIO(img_bytes))
+        try:
+            img_bytes = base64.b64decode(base64_img)
+            img = Image.open(io.BytesIO(img_bytes))
+        except Exception as decode_err:
+            logger.error(f"Image decoding failed: {str(decode_err)}")
+            return jsonify({
+                "error": "Invalid base64 image data",
+                "status": "failure"
+            }), 400
 
         # Perform Inference
+        logger.info("Executing prediction...")
         result = predict(img)
+        result["status"] = "success"
 
         return jsonify(result)
+
     except Exception as e:
-        return jsonify({"error": f"Prediction failed: {str(e)}"}), 500
+        logger.exception("An unexpected error occurred during prediction")
+        return jsonify({
+            "error": f"Prediction failed: {str(e)}",
+            "status": "failure"
+        }), 500
 
 @app.route('/health', methods=['GET'])
 def health_endpoint():
-    return jsonify({"status": "ok", "message": "MLP Digit Classifier API is running!"})
+    return jsonify({
+        "status": "ok",
+        "message": "MLP Digit Classifier API is running!",
+        "version": "2.0.0"
+    })
 
 if __name__ == "__main__":
-    app.run(host="0.0.0.0", port=5000, debug=True)
+    # Use environment variable for port (Render compatibility)
+    port = int(os.environ.get("PORT", 5000))
+    logger.info(f"Starting server on port {port}...")
+    app.run(host="0.0.0.0", port=port, debug=False)

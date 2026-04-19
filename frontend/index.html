@@ -3,116 +3,117 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="description" content="AI Handwritten Digit Classifier Professional Dashboard">
-    <title>Neural Digit - AI Dashboard</title>
-    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <title>Neural Core | Advanced Digit System</title>
+    <!-- Premium Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800&family=JetBrains+Mono:wght@400;500&family=Orbitron:wght@400;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="style.css">
 </head>
-<body>
-    <div class="dashboard-wrapper">
-        <!-- Sidebar: Model Info & Navigation -->
-        <aside class="sidebar">
-            <div class="logo">
-                <span class="icon">🧠</span>
-                <h1>NeuralDigit</h1>
+<body class="neural-dashboard">
+    <div class="glow-overlay"></div>
+    
+    <div class="app-layout">
+        <header class="main-header">
+            <div class="logo-group">
+                <div class="core-node"></div>
+                <h1>NEURAL<span class="gradient-text">CORE</span> <small>v2.0</small></h1>
             </div>
-            
-            <nav class="nav">
-                <div class="nav-section">
-                    <h3>Model Performance</h3>
-                    <div class="stat-grid">
-                        <div class="stat-card">
-                            <span class="stat-label">Accuracy</span>
-                            <span class="stat-value">98.2%</span>
-                        </div>
-                        <div class="stat-card">
-                            <span class="stat-label">Precision</span>
-                            <span class="stat-value">98.1%</span>
-                        </div>
-                        <div class="stat-card">
-                            <span class="stat-label">Recall</span>
-                            <span class="stat-value">98.1%</span>
-                        </div>
-                        <div class="stat-card">
-                            <span class="stat-label">F1-Score</span>
-                            <span class="stat-value">98.1%</span>
-                        </div>
-                    </div>
+            <div class="session-info">
+                <div class="status-indicator">
+                    <span class="pulsing-core"></span>
+                    <span id="statusText">System Active</span>
                 </div>
-
-                <div class="nav-section">
-                    <h3>MNIST Dataset Samples</h3>
-                    <div class="sample-gallery" id="sampleGallery">
-                        <!-- Populated by JS -->
-                    </div>
-                </div>
-            </nav>
-
-            <div class="sidebar-footer">
-                <p>MLP Architecture • Keras 2.15</p>
             </div>
-        </aside>
+        </header>
 
-        <!-- Main Workspace -->
-        <main class="main-workspace">
-            <!-- Top Section: Canvas & Results -->
-            <section class="top-row">
-                <div class="card workspace-card">
-                    <div class="card-header">
-                        <h2>Drawing Canvas</h2>
-                        <div class="actions">
-                            <button id="clearBtn" class="btn btn-outline">Clear</button>
-                            <button id="predictBtn" class="btn btn-primary">Predict Digit</button>
-                        </div>
-                    </div>
-                    <div class="canvas-container">
-                        <canvas id="digitCanvas" width="300" height="300"></canvas>
+        <div class="grid-container">
+            <!-- Left Panel: Input -->
+            <aside class="panel drawing-panel glass">
+                <div class="panel-header">
+                    <h3>Matrix Input</h3>
+                    <p>Draw a digit (0-9) inside the field</p>
+                </div>
+                
+                <div class="canvas-wrapper">
+                    <div class="canvas-bg-glow"></div>
+                    <canvas id="digitCanvas" width="280" height="280"></canvas>
+                    <div class="canvas-guide">
+                        <div class="guide-lines"></div>
                     </div>
                 </div>
 
-                <div class="card result-card">
-                    <div class="card-header">
-                        <h2>Prediction Hub</h2>
-                        <div id="statusBadge" class="status-badge idle">Idle</div>
+                <div class="action-dock">
+                    <button id="clearBtn" class="btn secondary">RESET MATRIX</button>
+                    <button id="predictBtn" class="btn primary">INFER DIGIT</button>
+                </div>
+            </aside>
+
+            <!-- Center Panel: Live Processing -->
+            <main class="panel processing-panel glass">
+                <div class="panel-header">
+                    <h3>Neural Processing Pipeline</h3>
+                </div>
+                
+                <div class="pipeline-viz">
+                    <div class="viz-node">
+                        <div class="viz-label">Capture</div>
+                        <canvas id="viz-raw" width="60" height="60"></canvas>
+                    </div>
+                    <div class="viz-link"></div>
+                    <div class="viz-node">
+                        <div class="viz-label">Normalize</div>
+                        <canvas id="viz-centered" width="60" height="60"></canvas>
+                    </div>
+                    <div class="viz-link active"></div>
+                    <div class="viz-node active">
+                        <div class="viz-label">Neural Input</div>
+                        <canvas id="viz-final" width="60" height="60"></canvas>
+                    </div>
+                </div>
+
+                <div class="terminal-box">
+                    <div class="terminal-header">SYSTEM_LOGS</div>
+                    <div class="terminal-content" id="terminal">
+                        <p class="log-entry">> Neural Core Initialized.</p>
+                        <p class="log-entry">> Weights Loaded: MLP_ARCHITECTURE_V2.</p>
+                    </div>
+                </div>
+            </main>
+
+            <!-- Right Panel: Results -->
+            <aside class="panel result-panel glass">
+                <div class="panel-header">
+                    <h3>Inference Summary</h3>
+                </div>
+
+                <div class="inference-output">
+                    <div class="prediction-sector">
+                        <div id="predictionValue" class="huge-text">-</div>
+                        <div class="label">CLASSIFIED DIGIT</div>
                     </div>
                     
-                    <div class="verdict-container">
-                        <div id="predictionValue" class="prediction-value">-</div>
-                        <div id="confidenceValue" class="confidence-value">Ready for input</div>
-                    </div>
-
-                    <div class="probabilities-container">
-                        <h3>Distribution</h3>
-                        <div class="water-bars" id="waterBars">
-                            <!-- Populated by JS -->
+                    <div class="metrics-sector">
+                        <div class="metric">
+                            <span class="label">Confidence</span>
+                            <span id="confidenceValue" class="value">0.0%</span>
+                        </div>
+                        <div class="metric">
+                            <span class="label">Status</span>
+                            <span id="statusBadge" class="status-pill idle">IDLE</span>
                         </div>
                     </div>
                 </div>
-            </section>
 
-            <!-- Bottom Section: Logs & Architecture -->
-            <section class="bottom-row">
-                <div class="card working-panel">
-                    <div class="card-header">
-                        <h2>Backend Working Panel 🔥</h2>
-                    </div>
-                    <div class="terminal" id="terminal">
-                        <p class="term-msg">> System ready. Waiting for draw...</p>
+                <div class="distribution-sector">
+                    <h4>Probability Map</h4>
+                    <div id="waterBars" class="bars-container">
+                        <!-- Bars injected by JS -->
                     </div>
                 </div>
-
-                <div class="card architecture-card">
-                    <div class="card-header">
-                        <h2>Model Training Profile</h2>
-                    </div>
-                    <div class="img-preview">
-                        <img src="../static/model.png" alt="Model Architecture" onerror="this.src='https://via.placeholder.com/400x150?text=Architecture+Plot+Missing'">
-                    </div>
-                </div>
-            </section>
-        </main>
+            </aside>
+        </div>
     </div>
 
+    <!-- Hidden audio or subtle FX can go here -->
     <script src="script.js"></script>
 </body>
 </html>
