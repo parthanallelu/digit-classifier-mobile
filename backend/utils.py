@@ -75,10 +75,25 @@ def preprocess_image(pil_image: Image.Image):
     processed_array = np.expand_dims(img_array, axis=0)
     logs.append(f"Phase 5: Reshaped for Neural Core: {processed_array.shape}")
 
-    stages["status"] = "Processed"
-    stages["dimensions"] = "28x28"
+    # Stage 6: Validation Heuristics (Rule-based)
+    active_pixels = np.count_nonzero(img_array)
+    total_pixels = img_array.size
+    density = active_pixels / total_pixels
     
-    return processed_array, logs, stages
+    is_valid_input = True
+    if density < 0.01: # Less than 1% (approx 8 pixels)
+        is_valid_input = False
+        logs.append(f"Input Check: Blank or empty canvas detected (Density: {density:.3f})")
+    elif density > 0.50: # More than 50%
+        is_valid_input = False
+        logs.append(f"Input Check: Excess noise or overly bold drawing detected (Density: {density:.3f})")
+    else:
+        logs.append(f"Input Check: Structural density verified ({density*100:.1f}%)")
+
+    stages["status"] = "Processed" if is_valid_input else "Rejected"
+    stages["density"] = float(density)
+    
+    return processed_array, logs, stages, is_valid_input
 
 def predict(pil_image: Image.Image) -> dict:
     """
@@ -86,9 +101,19 @@ def predict(pil_image: Image.Image) -> dict:
     """
     model = load_model()
     
-    # Preprocessing
-    processed_arr, logs, stages = preprocess_image(pil_image)
+    # Preprocessing & Validation
+    processed_arr, logs, stages, is_valid_input = preprocess_image(pil_image)
     
+    if not is_valid_input:
+        return {
+            "prediction": "Not a digit",
+            "confidence": 0.0,
+            "probabilities": [0.0] * 10,
+            "status": "invalid",
+            "logs": logs,
+            "stages": stages
+        }
+
     # Inference
     probs = model.predict(processed_arr, verbose=0)[0]
     probabilities = [float(p) for p in probs]
@@ -101,25 +126,26 @@ def predict(pil_image: Image.Image) -> dict:
     top1_prob = float(probs[top1_idx])
     top2_prob = float(probs[top2_idx])
     
-    # Confidence Logic (Defense for Viva)
-    # 1. Primary Threshold: 0.7 (Ensure strong feature activation)
-    # 2. Decision Margin: 0.2 (Ensure clear differentiation from secondary digit)
-    
-    prediction = "Uncertain"
+    # Reliability Heuristics
+    prediction = str(top1_idx)
+    status = "valid"
+
     if top1_prob < 0.7:
         prediction = "Not a digit"
-        logs.append(f"Heuristic Check: Confidence {top1_prob:.2f} < 0.7. Flagging as 'Invalid'.")
+        status = "invalid"
+        logs.append(f"Reliability Check: Max confidence {top1_prob:.2f} < 0.7. Input is likely non-digit.")
     elif (top1_prob - top2_prob) < 0.2:
         prediction = "Uncertain"
-        logs.append(f"Heuristic Check: Class margin ({top1_prob:.2f} - {top2_prob:.2f} = {top1_prob-top2_prob:.2f}) < 0.2. Overlapping features detected.")
+        status = "uncertain"
+        logs.append(f"Reliability Check: Margin ({top1_prob:.2f} - {top2_prob:.2f} = {top1_prob-top2_prob:.2f}) < 0.2. Prediction is ambiguous.")
     else:
-        prediction = str(top1_idx)
-        logs.append(f"Success: Predicted {prediction} with {top1_prob*100:.1f}% confidence.")
+        logs.append(f"Success: High-confidence match for '{prediction}' ({top1_prob*100:.1f}%)")
 
     return {
         "prediction": prediction,
         "confidence": top1_prob,
         "probabilities": probabilities,
+        "status": status,
         "logs": logs,
         "stages": stages
     }

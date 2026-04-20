@@ -51,7 +51,7 @@ def predict_endpoint():
         # Perform Inference
         logger.info("Executing prediction...")
         result = predict(img)
-        result["status"] = "success"
+        result["api_status"] = "success"
 
         return jsonify(result)
 

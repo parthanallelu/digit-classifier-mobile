@@ -143,17 +143,25 @@ predictBtn.addEventListener('click', async () => {
 function updateUI(data) {
     const pred = data.prediction;
     const conf = (data.confidence * 100).toFixed(1);
+    const status = data.status || 'valid';
 
-    predictionValue.innerText = isNaN(pred) ? '?' : pred;
+    // Display digit or placeholder symbols
+    if (status === 'valid') {
+        predictionValue.innerText = pred;
+        predictionValue.style.color = '#00ff6a'; // Green
+    } else if (status === 'uncertain') {
+        predictionValue.innerText = '?';
+        predictionValue.style.color = '#ff9d00'; // Yellow
+    } else {
+        predictionValue.innerText = '!';
+        predictionValue.style.color = '#ff3232'; // Red
+    }
+
     confidenceValue.innerText = `${conf}%`;
 
-    // Map status
-    let status = 'VALID';
-    if (pred === "Not a digit") status = 'INVALID';
-    if (pred === "Uncertain") status = 'UNCERTAIN';
-    
-    statusBadge.innerText = status;
-    statusBadge.className = `status-pill ${status.toLowerCase()}`;
+    // Update Status Pill
+    statusBadge.innerText = status.toUpperCase();
+    statusBadge.className = `status-pill ${status}`;
 
     // Logs
     if (data.logs) {
