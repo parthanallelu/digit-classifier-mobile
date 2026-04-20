@@ -21,6 +21,7 @@ function init() {
     createBars();
     addLog('NEURAL_CORE_OS V2.0.4 Loaded.', 'stage');
     addLog('Waiting for input stream...');
+    fetchModelStats();
 }
 
 function setupCanvas() {
@@ -183,6 +184,65 @@ function drawSimulation(pred) {
     vizCentered.drawImage(smallCanvas, 0, 0, 60, 60);
     vizFinal.filter = 'contrast(200%) grayscale(100%)';
     vizFinal.drawImage(smallCanvas, 0, 0, 60, 60);
+}
+
+// New: Model Insights Integration
+async function fetchModelStats() {
+    addLog('Querying Model Performance Metrics...', 'stage');
+    try {
+        const response = await fetch('/api/stats');
+        if (!response.ok) throw new Error('Stats Engine Offline');
+        
+        const data = await response.json();
+        if (data.status === 'success') {
+            document.getElementById('insightsSection').classList.remove('hide');
+            renderMetrics(data);
+            renderHeatmap('heatmap-counts', data.confusion_matrix, false);
+            renderHeatmap('heatmap-percent', data.confusion_matrix_percent, true);
+            addLog('Neural Core Diagnostics Synced Successfully.');
+        }
+    } catch (err) {
+        addLog(`Metrics Retrieval Failed: ${err.message}`, 'error');
+    }
+}
+
+function renderMetrics(data) {
+    document.getElementById('metric-accuracy').innerText = `${(data.accuracy * 100).toFixed(1)}%`;
+    document.getElementById('metric-precision').innerText = `${(data.precision * 100).toFixed(1)}%`;
+    document.getElementById('metric-recall').innerText = `${(data.recall * 100).toFixed(1)}%`;
+    document.getElementById('metric-f1').innerText = `${(data.f1_score * 100).toFixed(1)}%`;
+}
+
+function renderHeatmap(containerId, matrix, isPercentage) {
+    const container = document.getElementById(containerId);
+    container.innerHTML = '';
+    
+    let maxVal = 0;
+    if (isPercentage) {
+        maxVal = 100;
+    } else {
+        // For counts, use a capped max to allow smaller discrepancies to show color
+        matrix.forEach(row => row.forEach(val => { if (val > maxVal) maxVal = val; }));
+    }
+
+    matrix.forEach((row, i) => {
+        row.forEach((val, j) => {
+            const cell = document.createElement('div');
+            cell.className = 'hm-cell';
+            
+            // Normalize level (0-5)
+            const level = maxVal === 0 ? 0 : Math.ceil((val / maxVal) * 5);
+            cell.classList.add(`lvl-${level}`);
+            
+            // Format percentage or count for display
+            const displayVal = isPercentage ? Math.round(val) : val;
+            
+            cell.title = `Actual: ${i}, Predicted: ${j} | Value: ${val}${isPercentage ? '%' : ''}`;
+            cell.innerText = displayVal > 0 || i === j ? displayVal : '';
+            
+            container.appendChild(cell);
+        });
+    });
 }
 
 init();

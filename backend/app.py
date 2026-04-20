@@ -6,6 +6,7 @@ from flask import Flask, request, jsonify
 from flask_cors import CORS
 from PIL import Image
 from utils import predict
+from stats import get_model_stats
 
 # Configure basic logging
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
@@ -68,6 +69,17 @@ def health_endpoint():
         "message": "MLP Digit Classifier API is running!",
         "version": "2.0.0"
     })
+
+@app.route('/api/stats', methods=['GET'])
+def stats_endpoint():
+    """Returns model performance metrics and confusion matrices."""
+    stats = get_model_stats()
+    if stats and stats.get("status") == "success":
+        return jsonify(stats)
+    return jsonify({
+        "error": "Could not compute model statistics",
+        "status": "failure"
+    }), 500
 
 if __name__ == "__main__":
     # Use environment variable for port (Render compatibility)

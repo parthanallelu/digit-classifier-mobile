@@ -3,5 +3,5 @@ numpy
 Pillow
 flask
 flask-cors
-
+scikit-learn
 gunicorn

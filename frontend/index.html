@@ -25,6 +25,44 @@
             </div>
         </header>
 
+        <!-- Model Insights Section (New) -->
+        <section id="insightsSection" class="insights-dashboard glass secondary-panel hide">
+            <div class="section-header">
+                <h3>Neural Core Diagnostics</h3>
+                <span class="badge">Model Version: v2.0.0</span>
+            </div>
+            
+            <div class="metrics-row">
+                <div class="metric-block">
+                    <div class="block-label">Accuracy</div>
+                    <div id="metric-accuracy" class="block-value">--</div>
+                </div>
+                <div class="metric-block">
+                    <div class="block-label">Precision</div>
+                    <div id="metric-precision" class="block-value">--</div>
+                </div>
+                <div class="metric-block">
+                    <div class="block-label">Recall</div>
+                    <div id="metric-recall" class="block-value">--</div>
+                </div>
+                <div class="metric-block">
+                    <div class="block-label">F1-Score</div>
+                    <div id="metric-f1" class="block-value">--</div>
+                </div>
+            </div>
+
+            <div class="heatmaps-row">
+                <div class="heatmap-box">
+                    <h4>Confusion Matrix <small>(Absolute Counts)</small></h4>
+                    <div id="heatmap-counts" class="heatmap-grid"></div>
+                </div>
+                <div class="heatmap-box">
+                    <h4>Confusion Matrix <small>(Percent per Class)</small></h4>
+                    <div id="heatmap-percent" class="heatmap-grid"></div>
+                </div>
+            </div>
+        </section>
+
         <div class="grid-container">
             <!-- Left Panel: Input -->
             <aside class="panel drawing-panel glass">
