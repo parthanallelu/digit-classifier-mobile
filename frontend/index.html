@@ -57,13 +57,25 @@
                     </div>
                     <div class="pipeline-content">
                         <div class="viz-row">
-                            <div class="viz-node">
-                                <div class="node-icon"><canvas id="viz-raw" width="64" height="64"></canvas></div>
+                            <div class="viz-node active" id="node-capture">
+                                <div class="node-icon frosted"><canvas id="viz-raw" width="64" height="64"></canvas></div>
                                 <span class="node-label">CAPTURE</span>
                             </div>
-                            <div class="viz-node">
-                                <div class="node-icon"><canvas id="viz-centered" width="64" height="64"></canvas></div>
+                            <div class="viz-node" id="node-normalize">
+                                <div class="node-icon frosted"><canvas id="viz-centered" width="64" height="64"></canvas></div>
                                 <span class="node-label">NORMALIZE</span>
+                            </div>
+                            <div class="viz-node" id="node-encode">
+                                <div class="node-icon frosted"><canvas id="viz-encode" width="64" height="64"></canvas></div>
+                                <span class="node-label">ENCODE</span>
+                            </div>
+                            <div class="viz-node" id="node-compress">
+                                <div class="node-icon frosted"><canvas id="viz-compress" width="64" height="64"></canvas></div>
+                                <span class="node-label">COMPRESS</span>
+                            </div>
+                            <div class="viz-node" id="node-classify">
+                                <div class="node-icon frosted"><canvas id="viz-classify" width="64" height="64"></canvas></div>
+                                <span class="node-label">CLASSIFY</span>
                             </div>
                         </div>
                         

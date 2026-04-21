@@ -16,6 +16,9 @@ const predictionResult = document.getElementById('prediction-result');
 // Vision Viz Canvases
 const vizRaw = document.getElementById('viz-raw').getContext('2d');
 const vizCentered = document.getElementById('viz-centered').getContext('2d');
+const vizEncode = document.getElementById('viz-encode').getContext('2d');
+const vizCompress = document.getElementById('viz-compress').getContext('2d');
+const vizClassify = document.getElementById('viz-classify').getContext('2d');
 
 let isDrawing = false;
 
@@ -81,6 +84,19 @@ function addLog(msg, type = 'normal') {
     p.innerHTML = `<span class="timestamp">[${new Date().toLocaleTimeString()}]</span> > ${msg}`;
     terminal.appendChild(p);
     terminal.scrollTop = terminal.scrollHeight;
+
+    // Map logs to pipeline stages for visual feedback
+    if (msg.includes('Capturing')) setActiveNode('node-capture');
+    if (msg.includes('Rescaled') || msg.includes('Normalization')) setActiveNode('node-normalize');
+    if (msg.includes('Reshaped')) setActiveNode('node-encode');
+    if (msg.includes('Structural density')) setActiveNode('node-compress');
+    if (msg.includes('Success')) setActiveNode('node-classify');
+}
+
+function setActiveNode(id) {
+    document.querySelectorAll('.viz-node').forEach(n => n.classList.remove('active'));
+    const target = document.getElementById(id);
+    if (target) target.classList.add('active');
 }
 
 // Canvas Interaction
@@ -136,7 +152,7 @@ function resetBars() {
 }
 
 function clearViz() {
-    [vizRaw, vizCentered].forEach(v => {
+    [vizRaw, vizCentered, vizEncode, vizCompress, vizClassify].forEach(v => {
         v.fillStyle = '#f9fafb';
         v.fillRect(0, 0, 64, 64);
     });
@@ -215,6 +231,30 @@ function drawSimulation() {
     
     vizRaw.drawImage(canvas, 0, 0, 64, 64);
     vizCentered.drawImage(smallCanvas, 0, 0, 64, 64);
+
+    // Abstract patterns for new stages
+    drawAbstract(vizEncode, 512);
+    drawAbstract(vizCompress, 128);
+    drawAbstract(vizClassify, 10, true);
+}
+
+function drawAbstract(v, neurons, isOutput = false) {
+    v.fillStyle = '#f9fafb';
+    v.fillRect(0, 0, 64, 64);
+    
+    const cols = Math.sqrt(neurons) || 4;
+    const size = 64 / cols;
+    
+    for (let i = 0; i < neurons; i++) {
+        const r = Math.floor(i / cols);
+        const c = i % cols;
+        v.fillStyle = Math.random() > 0.5 ? '#3b82f6' : '#e5e7eb';
+        if (isOutput) v.fillStyle = i === parseInt(predictionValue.innerText) ? '#10b981' : '#f3f4f6';
+        
+        v.beginPath();
+        v.arc(c * size + size/2, r * size + size/2, size/3, 0, Math.PI * 2);
+        v.fill();
+    }
 }
 
 // Model Insights Integration

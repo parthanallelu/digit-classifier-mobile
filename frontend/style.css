@@ -20,12 +20,28 @@
 body {
     font-family: 'Outfit', 'Inter', sans-serif;
     color: var(--text-primary);
-    background: var(--core-bg);
+    background: #cbd5e1; /* Medium slate gray */
+    position: relative;
     min-height: 100vh;
     overflow-x: hidden;
 }
 
+body::before {
+    content: '';
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: url('neural_core_bg_1776622068814.png') no-repeat center center fixed;
+    background-size: cover;
+    opacity: 0.25; /* More visible 'medium' watermark */
+    z-index: -1;
+}
+
 .app-layout {
+    position: relative;
+    z-index: 1;
     max-width: 1400px;
     margin: 0 auto;
     padding: 20px;
@@ -177,7 +193,7 @@ h1 {
 .canvas-container {
     padding: 24px;
     position: relative;
-    background: #fafafa;
+    background: #fff;
     display: flex;
     justify-content: center;
 }
@@ -186,7 +202,7 @@ h1 {
     background: #fff;
     border: 2px dashed #e5e7eb;
     border-radius: 12px;
-    cursor: crosshair;
+    cursor: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="black" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="1" x2="12" y2="23"></line><line x1="1" y1="12" x2="23" y2="12"></line></svg>') 12 12, crosshair;
 }
 
 .canvas-overlay {
@@ -249,8 +265,12 @@ h1 {
 
 .viz-row {
     display: flex;
-    justify-content: center;
-    gap: 24px;
+    justify-content: space-between;
+    align-items: center;
+    gap: 12px;
+    padding: 10px 0;
+    position: relative;
+    overflow-x: auto;
 }
 
 .viz-node {
@@ -258,18 +278,56 @@ h1 {
     flex-direction: column;
     align-items: center;
     gap: 12px;
+    flex: 1;
+    min-width: 70px;
+    position: relative;
+}
+
+.viz-node:not(:last-child)::after {
+    content: '';
+    position: absolute;
+    top: 35px;
+    left: calc(50% + 40px);
+    width: calc(100% - 80px);
+    height: 2px;
+    background: linear-gradient(90deg, #e5e7eb, #e5e7eb 50%, transparent 50%);
+    background-size: 10px 2px;
+    z-index: 0;
+}
+
+.viz-node.active:not(:last-child)::after {
+    background: linear-gradient(90deg, var(--accent-blue), var(--accent-blue) 50%, transparent 50%);
+    background-size: 10px 2px;
+    animation: flowLine 0.5s linear infinite;
 }
 
 .node-icon {
-    width: 100px;
-    height: 100px;
-    background: #f9fafb;
+    width: 80px;
+    height: 70px;
+    background: #fff;
     border: 1px solid var(--border-light);
     border-radius: 12px;
     display: flex;
     align-items: center;
     justify-content: center;
     overflow: hidden;
+    position: relative;
+    z-index: 1;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.node-icon.frosted {
+    background: rgba(255, 255, 255, 0.7);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    border: 1px solid rgba(255, 255, 255, 0.3);
+}
+
+.viz-node.active .node-icon {
+    border-color: var(--accent-blue);
+    box-shadow: 0 0 15px rgba(59, 130, 246, 0.3);
+    transform: translateY(-2px);
+    animation: pulseActive 2s infinite;
 }
 
 .node-label {
@@ -283,7 +341,7 @@ h1 {
     flex-grow: 1;
     display: flex;
     flex-direction: column;
-    background: #f9fafb;
+    background: #fff;
     border: 1px solid var(--border-light);
     border-radius: 12px;
     overflow: hidden;
@@ -304,7 +362,7 @@ h1 {
     font-size: 11px;
     color: #374151;
     overflow-y: auto;
-    height: 160px;
+    flex: 1;
 }
 
 .log-entry { margin-bottom: 6px; }
@@ -320,7 +378,7 @@ h1 {
 
 .placeholder-box {
     height: 180px;
-    background: #f9fafb;
+    background: #fff;
     border-radius: 12px;
     display: flex;
     align-items: center;
@@ -353,7 +411,7 @@ h1 {
 }
 
 .stat-card {
-    background: #f9fafb;
+    background: #fff;
     padding: 16px;
     border-radius: 12px;
     display: flex;
@@ -550,3 +608,31 @@ h1 {
 .lvl-5 { background: #10b981; color: #fff; }
 
 .hide { display: none; }
+
+@keyframes pulseActive {
+    0% { box-shadow: 0 0 0 0 rgba(59, 130, 246, 0.4); }
+    70% { box-shadow: 0 0 0 10px rgba(59, 130, 246, 0); }
+    100% { box-shadow: 0 0 0 0 rgba(59, 130, 246, 0); }
+}
+
+@keyframes flowLine {
+    from { background-position: 0 0; }
+    to { background-position: 10px 0; }
+}
+
+/* Responsive adjustments for 1280px */
+@media (max-width: 1300px) {
+    .inference-grid {
+        grid-template-columns: 320px 1fr 340px;
+        gap: 16px;
+    }
+    .node-icon {
+        width: 70px;
+        height: 60px;
+    }
+    .viz-node:not(:last-child)::after {
+        top: 30px;
+        left: calc(50% + 35px);
+        width: calc(100% - 70px);
+    }
+}
