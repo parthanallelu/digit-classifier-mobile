@@ -13,142 +13,150 @@
     
     <div class="app-layout">
         <header class="main-header">
-            <div class="logo-group">
-                <div class="core-node"></div>
-                <h1>NEURAL<span class="gradient-text">CORE</span> <small>v2.0</small></h1>
-            </div>
-            <div class="session-info">
-                <div class="status-indicator">
-                    <span class="pulsing-core"></span>
-                    <span id="statusText">System Active</span>
+            <div class="header-content">
+                <div class="logo-group">
+                    <div class="logo-icon"></div>
+                    <h1>NEURALCORE <span class="badge-v">v2.0</span></h1>
+                </div>
+                <div class="header-actions">
+                    <div class="status-indicator-pill">
+                        <span class="dot"></span> System Active
+                    </div>
                 </div>
             </div>
+            <nav class="tab-navigation">
+                <button id="tab-inference" class="tab-btn active">Inference</button>
+                <button id="tab-diagnostics" class="tab-btn">Diagnostics</button>
+            </nav>
         </header>
 
-        <!-- Model Insights Section (New) -->
-        <section id="insightsSection" class="insights-dashboard glass secondary-panel hide">
-            <div class="section-header">
-                <h3>Neural Core Diagnostics</h3>
-                <span class="badge">Model Version: v2.0.0</span>
-            </div>
-            
-            <div class="metrics-row">
-                <div class="metric-block">
-                    <div class="block-label">Accuracy</div>
-                    <div id="metric-accuracy" class="block-value">--</div>
-                </div>
-                <div class="metric-block">
-                    <div class="block-label">Precision</div>
-                    <div id="metric-precision" class="block-value">--</div>
-                </div>
-                <div class="metric-block">
-                    <div class="block-label">Recall</div>
-                    <div id="metric-recall" class="block-value">--</div>
-                </div>
-                <div class="metric-block">
-                    <div class="block-label">F1-Score</div>
-                    <div id="metric-f1" class="block-value">--</div>
-                </div>
-            </div>
-
-            <div class="heatmaps-row">
-                <div class="heatmap-box">
-                    <h4>Confusion Matrix <small>(Absolute Counts)</small></h4>
-                    <div id="heatmap-counts" class="heatmap-grid"></div>
-                </div>
-                <div class="heatmap-box">
-                    <h4>Confusion Matrix <small>(Percent per Class)</small></h4>
-                    <div id="heatmap-percent" class="heatmap-grid"></div>
-                </div>
-            </div>
-        </section>
-
-        <div class="grid-container">
-            <!-- Left Panel: Input -->
-            <aside class="panel drawing-panel glass">
-                <div class="panel-header">
-                    <h3>Matrix Input</h3>
-                    <p>Draw a digit (0-9) inside the field</p>
-                </div>
-                
-                <div class="canvas-wrapper">
-                    <div class="canvas-bg-glow"></div>
-                    <canvas id="digitCanvas" width="280" height="280"></canvas>
-                    <div class="canvas-guide">
-                        <div class="guide-lines"></div>
+        <!-- View Containers -->
+        <main id="inference-view" class="view-container active">
+            <div class="inference-grid">
+                <!-- Left: Input -->
+                <div class="card panel-input">
+                    <div class="card-header">
+                        <h3>MATRIX INPUT</h3>
                     </div>
-                </div>
-
-                <div class="action-dock">
-                    <button id="clearBtn" class="btn secondary">RESET MATRIX</button>
-                    <button id="predictBtn" class="btn primary">INFER DIGIT</button>
-                </div>
-            </aside>
-
-            <!-- Center Panel: Live Processing -->
-            <main class="panel processing-panel glass">
-                <div class="panel-header">
-                    <h3>Neural Processing Pipeline</h3>
-                </div>
-                
-                <div class="pipeline-viz">
-                    <div class="viz-node">
-                        <div class="viz-label">Capture</div>
-                        <canvas id="viz-raw" width="60" height="60"></canvas>
-                    </div>
-                    <div class="viz-link"></div>
-                    <div class="viz-node">
-                        <div class="viz-label">Normalize</div>
-                        <canvas id="viz-centered" width="60" height="60"></canvas>
-                    </div>
-                    <div class="viz-link active"></div>
-                    <div class="viz-node active">
-                        <div class="viz-label">Neural Input</div>
-                        <canvas id="viz-final" width="60" height="60"></canvas>
-                    </div>
-                </div>
-
-                <div class="terminal-box">
-                    <div class="terminal-header">SYSTEM_LOGS</div>
-                    <div class="terminal-content" id="terminal">
-                        <p class="log-entry">> Neural Core Initialized.</p>
-                        <p class="log-entry">> Weights Loaded: MLP_ARCHITECTURE_V2.</p>
-                    </div>
-                </div>
-            </main>
-
-            <!-- Right Panel: Results -->
-            <aside class="panel result-panel glass">
-                <div class="panel-header">
-                    <h3>Inference Summary</h3>
-                </div>
-
-                <div class="inference-output">
-                    <div class="prediction-sector">
-                        <div id="predictionValue" class="huge-text">-</div>
-                        <div class="label">CLASSIFIED DIGIT</div>
-                    </div>
-                    
-                    <div class="metrics-sector">
-                        <div class="metric">
-                            <span class="label">Confidence</span>
-                            <span id="confidenceValue" class="value">0.0%</span>
+                    <div class="canvas-container">
+                        <canvas id="digitCanvas" width="280" height="280"></canvas>
+                        <div class="canvas-overlay">
+                            <p id="canvas-placeholder">draw a digit<br>0 — 9</p>
                         </div>
-                        <div class="metric">
-                            <span class="label">Status</span>
-                            <span id="statusBadge" class="status-pill idle">IDLE</span>
+                    </div>
+                    <div class="card-footer">
+                        <button id="clearBtn" class="btn-outline">Reset</button>
+                        <button id="predictBtn" class="btn-primary">Infer Digit</button>
+                    </div>
+                </div>
+
+                <!-- Center: Pipeline -->
+                <div class="card panel-pipeline">
+                    <div class="card-header">
+                        <h3>NEURAL PROCESSING PIPELINE</h3>
+                    </div>
+                    <div class="pipeline-content">
+                        <div class="viz-row">
+                            <div class="viz-node">
+                                <div class="node-icon"><canvas id="viz-raw" width="64" height="64"></canvas></div>
+                                <span class="node-label">CAPTURE</span>
+                            </div>
+                            <div class="viz-node">
+                                <div class="node-icon"><canvas id="viz-centered" width="64" height="64"></canvas></div>
+                                <span class="node-label">NORMALIZE</span>
+                            </div>
+                        </div>
+                        
+                        <div class="logs-section">
+                            <div class="logs-header">SYSTEM LOGS</div>
+                            <div id="terminal" class="logs-content">
+                                <!-- Logs injected here -->
+                            </div>
                         </div>
                     </div>
                 </div>
 
-                <div class="distribution-sector">
-                    <h4>Probability Map</h4>
-                    <div id="waterBars" class="bars-container">
-                        <!-- Bars injected by JS -->
+                <!-- Right: Summary -->
+                <div class="card panel-summary">
+                    <div class="card-header">
+                        <h3>INFERENCE SUMMARY</h3>
+                    </div>
+                    <div class="summary-content">
+                        <div id="prediction-placeholder" class="placeholder-box">
+                            <span>AWAITING INPUT</span>
+                        </div>
+                        <div id="prediction-result" class="result-box hide">
+                            <div id="predictionValue" class="display-digit">-</div>
+                        </div>
+                        
+                        <div class="stats-row">
+                            <div class="stat-card">
+                                <span class="stat-label">CONFIDENCE</span>
+                                <span id="confidenceValue" class="stat-value">0.0%</span>
+                            </div>
+                            <div class="stat-card">
+                                <span class="stat-label">STATUS</span>
+                                <div id="statusBadge" class="status-pill-minimal">
+                                    <span class="status-dot"></span> <span id="statusText">Idle</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="probability-section">
+                            <h4>PROBABILITY MAP</h4>
+                            <div id="waterBars" class="prob-list">
+                                <!-- Bars injected here -->
+                            </div>
+                        </div>
                     </div>
                 </div>
-            </aside>
-        </div>
+            </div>
+        </main>
+
+        <main id="diagnostics-view" class="view-container hide">
+            <div class="diagnostics-content">
+                <div class="diag-header-row">
+                    <h2>Neural Core Diagnostics</h2>
+                    <span class="ver-tag">Model Version: v2.0.0</span>
+                </div>
+
+                <div class="metrics-grid">
+                    <div class="metric-card">
+                        <span class="label">ACCURACY</span>
+                        <div id="metric-accuracy" class="value">--</div>
+                    </div>
+                    <div class="metric-card">
+                        <span class="label">PRECISION</span>
+                        <div id="metric-precision" class="value">--</div>
+                    </div>
+                    <div class="metric-card">
+                        <span class="label">RECALL</span>
+                        <div id="metric-recall" class="value">--</div>
+                    </div>
+                    <div class="metric-card">
+                        <span class="label">F1-SCORE</span>
+                        <div id="metric-f1" class="value">--</div>
+                    </div>
+                </div>
+
+                <div class="matrices-row">
+                    <div class="card matrix-card">
+                        <div class="card-header">
+                            <h3>Confusion Matrix</h3>
+                            <p>Absolute Counts</p>
+                        </div>
+                        <div id="heatmap-counts" class="heatmap-grid modern"></div>
+                    </div>
+                    <div class="card matrix-card">
+                        <div class="card-header">
+                            <h3>Confusion Matrix</h3>
+                            <p>Percent per Class</p>
+                        </div>
+                        <div id="heatmap-percent" class="heatmap-grid modern"></div>
+                    </div>
+                </div>
+            </div>
+        </main>
     </div>
 
     <!-- Hidden audio or subtle FX can go here -->

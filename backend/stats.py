@@ -10,20 +10,26 @@ logger = logging.getLogger(__name__)
 MODEL_PATH = os.path.join(os.path.dirname(__file__), "model", "digit_model.h5")
 
 _stats_cache = None
+_model_last_modified = 0
 
 def get_model_stats():
     """
     Computes or returns cached Accuracy, Precision, Recall, F1, and Confusion Matrices.
-    Uses the official MNIST test dataset.
+    Uses the official MNIST test dataset. Auto-refreshes if the model file changes.
     """
-    global _stats_cache
-    if _stats_cache is not None:
-        return _stats_cache
-
+    global _stats_cache, _model_last_modified
+    
     try:
         if not os.path.exists(MODEL_PATH):
             logger.error(f"Model file not found at {MODEL_PATH}")
             return None
+
+        # Check modified time for auto-refresh
+        mtime = os.path.getmtime(MODEL_PATH)
+        if _stats_cache is not None and mtime <= _model_last_modified:
+            return _stats_cache
+        
+        _model_last_modified = mtime
 
         # Load model
         logger.info("Loading model for statistics computation...")
@@ -41,7 +47,7 @@ def get_model_stats():
         y_pred_probs = model.predict(x_test_norm, verbose=0)
         y_pred = np.argmax(y_pred_probs, axis=1)
         
-        # Calculate Metrics
+        # Calculate Metrics (matching notebook macro-averaging)
         accuracy = accuracy_score(y_test, y_pred)
         precision, recall, f1, _ = precision_recall_fscore_support(y_test, y_pred, average='macro')
         
@@ -49,7 +55,6 @@ def get_model_stats():
         cm = confusion_matrix(y_test, y_pred)
         
         # Confusion Matrix (%)
-        # We divide each row by the sum of that row (total actual for that class)
         cm_percent = cm.astype('float') / cm.sum(axis=1)[:, np.newaxis]
         cm_percent = (cm_percent * 100).round(2)
         
@@ -71,3 +76,4 @@ def get_model_stats():
             "status": "failure",
             "error": str(e)
         }
+

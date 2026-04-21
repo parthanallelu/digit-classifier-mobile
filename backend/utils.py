@@ -38,7 +38,17 @@ def preprocess_image(pil_image: Image.Image):
 
     # Stage 1: Convert to Grayscale
     gray_img = pil_image.convert("L")
-    logs.append("Phase 1: Grayscale conversion successful.")
+    
+    # Auto-Inversion: MNIST and the model expect white digits on black background.
+    # The new light-mode UI sends black digits on white background.
+    # We check the average brightness of corners to detect background color.
+    img_np = np.array(gray_img)
+    corners = [img_np[0,0], img_np[0,-1], img_np[-1,0], img_np[-1,-1]]
+    if np.mean(corners) > 128:
+        gray_img = ImageOps.invert(gray_img)
+        logs.append("Phase 1: Light-mode background detected. Inverted to standard MNIST format.")
+    else:
+        logs.append("Phase 1: Dark-mode background detected. Grayscale conversion successful.")
 
     # Stage 2: Bounding Box Cropping
     # Get the bounding box of the non-black area
@@ -81,12 +91,12 @@ def preprocess_image(pil_image: Image.Image):
     density = active_pixels / total_pixels
     
     is_valid_input = True
-    if density < 0.01: # Less than 1% (approx 8 pixels)
+    if density < 0.01: # Less than 1%
         is_valid_input = False
         logs.append(f"Input Check: Blank or empty canvas detected (Density: {density:.3f})")
-    elif density > 0.50: # More than 50%
+    elif density > 0.75: # Increased from 0.50 to allow very bold drawings
         is_valid_input = False
-        logs.append(f"Input Check: Excess noise or overly bold drawing detected (Density: {density:.3f})")
+        logs.append(f"Input Check: Complex drawing or shaded area detected (Density: {density:.3f}). Please draw a single digit.")
     else:
         logs.append(f"Input Check: Structural density verified ({density*100:.1f}%)")
 
@@ -130,16 +140,16 @@ def predict(pil_image: Image.Image) -> dict:
     prediction = str(top1_idx)
     status = "valid"
 
-    if top1_prob < 0.7:
+    if top1_prob < 0.6: # Lowered from 0.7 to handle bold styles
         prediction = "Not a digit"
         status = "invalid"
-        logs.append(f"Reliability Check: Max confidence {top1_prob:.2f} < 0.7. Input is likely non-digit.")
-    elif (top1_prob - top2_prob) < 0.2:
+        logs.append(f"Reliability Check: Max confidence {top1_prob:.2f} < 0.6. Input style is too diverse for single-digit classification.")
+    elif (top1_prob - top2_prob) < 0.15: # Slightly loosened margin
         prediction = "Uncertain"
         status = "uncertain"
-        logs.append(f"Reliability Check: Margin ({top1_prob:.2f} - {top2_prob:.2f} = {top1_prob-top2_prob:.2f}) < 0.2. Prediction is ambiguous.")
+        logs.append(f"Reliability Check: Ambiguous margin ({top1_prob:.2f} vs {top2_prob:.2f}).")
     else:
-        logs.append(f"Success: High-confidence match for '{prediction}' ({top1_prob*100:.1f}%)")
+        logs.append(f"Success: Match found for '{prediction}' ({top1_prob*100:.1f}%)")
 
     return {
         "prediction": prediction,

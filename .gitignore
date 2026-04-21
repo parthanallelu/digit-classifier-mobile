@@ -30,3 +30,7 @@ env/
 
 # Output
 .DS_Store
+
+# Local development
+scratch/
+
