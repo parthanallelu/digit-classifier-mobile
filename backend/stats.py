@@ -7,33 +7,42 @@ import logging
 logger = logging.getLogger(__name__)
 
 # Paths
-MODEL_PATH = os.path.join(os.path.dirname(__file__), "model", "digit_model.h5")
+def get_model_path():
+    """Return the path to the best available model file."""
+    keras_path = os.path.join(os.path.dirname(__file__), "model", "digit_model.keras")
+    h5_path = os.path.join(os.path.dirname(__file__), "model", "digit_model.h5")
+    return keras_path if os.path.exists(keras_path) else h5_path
 
 _stats_cache = None
 _model_last_modified = 0
+_current_model_path = None
 
 def get_model_stats():
     """
     Computes or returns cached Accuracy, Precision, Recall, F1, and Confusion Matrices.
     Uses the official MNIST test dataset. Auto-refreshes if the model file changes.
     """
-    global _stats_cache, _model_last_modified
+    global _stats_cache, _model_last_modified, _current_model_path
     
     try:
-        if not os.path.exists(MODEL_PATH):
-            logger.error(f"Model file not found at {MODEL_PATH}")
+        model_path = get_model_path()
+        if not os.path.exists(model_path):
+            logger.error(f"Model file not found at {model_path}")
             return None
 
-        # Check modified time for auto-refresh
-        mtime = os.path.getmtime(MODEL_PATH)
-        if _stats_cache is not None and mtime <= _model_last_modified:
+        # Check modified time or file path change for auto-refresh
+        mtime = os.path.getmtime(model_path)
+        if (_stats_cache is not None and 
+            mtime <= _model_last_modified and 
+            model_path == _current_model_path):
             return _stats_cache
         
         _model_last_modified = mtime
+        _current_model_path = model_path
 
         # Load model
-        logger.info("Loading model for statistics computation...")
-        model = keras.models.load_model(MODEL_PATH)
+        logger.info(f"Loading model for statistics computation from {model_path}...")
+        model = keras.models.load_model(model_path)
         
         # Load MNIST test data
         logger.info("Loading MNIST test dataset...")

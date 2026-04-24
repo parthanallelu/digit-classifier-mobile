@@ -11,7 +11,11 @@ from PIL import Image, ImageOps
 from tensorflow import keras
 
 # Paths
-MODEL_PATH = os.path.join(os.path.dirname(__file__), "model", "digit_model.h5")
+def get_model_path():
+    """Return the path to the best available model file."""
+    keras_path = os.path.join(os.path.dirname(__file__), "model", "digit_model.keras")
+    h5_path = os.path.join(os.path.dirname(__file__), "model", "digit_model.h5")
+    return keras_path if os.path.exists(keras_path) else h5_path
 
 # Global model cache
 _model = None
@@ -19,10 +23,11 @@ _model = None
 def load_model() -> keras.Model:
     """Load and cache the trained Keras model."""
     global _model
+    model_path = get_model_path()
     if _model is None:
-        if not os.path.exists(MODEL_PATH):
-            raise FileNotFoundError(f"Model not found at '{MODEL_PATH}'")
-        _model = keras.models.load_model(MODEL_PATH)
+        if not os.path.exists(model_path):
+            raise FileNotFoundError(f"Model not found at '{model_path}'")
+        _model = keras.models.load_model(model_path)
     return _model
 
 def preprocess_image(pil_image: Image.Image):
